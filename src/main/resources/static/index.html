@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从电影评分生成个性化片单的协同过滤演示">
+  <title>电影片单 · 协同过滤演示</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/webjars/vue/3.5.30/dist/vue.global.prod.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <noscript><p class="noscript">请启用 JavaScript 以浏览电影并提交评分。</p></noscript>
+  <div id="app" v-cloak>
+    <header class="masthead">
+      <div class="frame masthead-inner">
+        <a class="brand" href="/" aria-label="电影片单首页">
+          <span class="brand-mark" aria-hidden="true"></span>
+          电影片单
+        </a>
+        <div class="profile">
+          <label for="viewer">演示身份</label>
+          <select id="viewer" v-model="activeUser" :disabled="saving" aria-describedby="profile-note"
+                  @change="changeUser">
+            <option value="">访客</option>
+            <option v-for="user in users" :key="user.id" :value="String(user.id)">{{ user.name }}</option>
+          </select>
+          <p v-if="usersError" class="profile-note" id="profile-note" role="alert">
+            {{ usersError }}
+            <button type="button" class="text-button" @click="loadUsers">重试</button>
+          </p>
+          <p v-else class="profile-note" id="profile-note">仅用于本地演示，无需登录。</p>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="frame page-layout">
+      <section class="recommendations" aria-labelledby="recommendation-heading">
+        <div class="section-heading">
+          <h1 id="recommendation-heading" tabindex="-1">{{ activeUser ? '猜你想看' : '热门片单' }}</h1>
+          <p v-if="!activeUser">选择一个演示身份，体验评分如何改变片单。</p>
+          <p v-else-if="!recommendationLoading && !recommendationError && recommendations.length
+                      && recommendations.every(item => item.source === 'popular')">
+            当前评分记录不足以生成个性化片单，先展示尚未评价的热门电影。
+          </p>
+          <p v-else>根据相似用户的评分推荐你尚未评价的电影。</p>
+        </div>
+        <div class="section-status" v-if="recommendationLoading" role="status">正在生成片单…</div>
+        <div class="section-status error" v-else-if="recommendationError" role="alert">
+          {{ recommendationError }}
+          <button type="button" class="text-button" @click="loadRecommendations">重试</button>
+        </div>
+        <p class="section-status" v-else-if="!recommendations.length">暂时没有可推荐的电影。</p>
+        <ul v-else class="feature-list" aria-label="推荐电影列表">
+          <li v-for="item in recommendations" :key="item.movie.id">
+            <button type="button" class="feature-card" @click="openDetails($event.currentTarget, item.movie, item)">
+              <span class="card-art" :class="'art-' + (item.movie.id % 4)" aria-hidden="true">
+                <span class="art-shape"></span>
+              </span>
+              <span class="card-body">
+                <span class="card-title">{{ item.movie.title }}</span>
+                <span class="card-meta">{{ item.movie.genre }} · {{ item.movie.year }}</span>
+                <span class="recommendation-reason">{{ recommendationReason(item) }}</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <section class="catalog" aria-labelledby="catalog-heading">
+        <div class="section-heading">
+          <h2 id="catalog-heading">电影目录</h2>
+          <form class="search" role="search" @submit.prevent="searchMovies">
+            <label class="sr-only" for="movie-query">搜索片名</label>
+            <input id="movie-query" type="search" v-model="query" maxlength="100" placeholder="搜索片名">
+            <button type="submit">搜索</button>
+          </form>
+        </div>
+        <div class="section-status" v-if="catalogLoading" role="status">正在读取电影…</div>
+        <div class="section-status error" v-else-if="catalogError" role="alert">
+          {{ catalogError }}
+          <button type="button" class="text-button" @click="loadMovies">重试</button>
+        </div>
+        <p class="section-status" v-else-if="!movies.length">没有找到电影。试试其他片名。</p>
+        <ul v-else class="catalog-list" aria-label="电影目录列表">
+          <li v-for="movie in movies" :key="movie.id">
+            <button class="catalog-entry" type="button" @click="openDetails($event.currentTarget, movie)">
+              <span>
+                <span class="catalog-title">{{ movie.title }}</span>
+                <span class="card-meta">{{ movie.year }} · {{ movie.genre }}</span>
+              </span>
+              <span class="catalog-rating">{{ movie.ratingCount ? formatScore(movie.averageRating) + ' 分' : '暂无评分' }}</span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <dialog ref="detailsDialog" aria-labelledby="movie-heading" @close="closeDetails">
+      <template v-if="selectedMovie">
+        <form class="dialog-actions" method="dialog">
+          <button type="submit" autofocus aria-label="关闭电影详情">关闭</button>
+        </form>
+        <h2 id="movie-heading">{{ selectedMovie.title }}</h2>
+        <p class="card-meta">{{ selectedMovie.year }} · {{ selectedMovie.genre }}</p>
+        <p v-if="selectedMovie.ratingCount" class="detail-rating">
+          平均 {{ formatScore(selectedMovie.averageRating) }} 分，{{ selectedMovie.ratingCount }} 人已评分
+        </p>
+        <p v-if="selectedRecommendation" class="detail-reason">{{ recommendationReason(selectedRecommendation) }}</p>
+        <p class="description">{{ selectedMovie.description }}</p>
+        <form v-if="activeUser" class="rating-form" @submit.prevent="saveRating">
+          <fieldset :disabled="saving">
+            <legend>给这部电影评分</legend>
+            <div class="rating-options">
+              <label v-for="number in 5" :key="number">
+                <input type="radio" name="score" :value="number" v-model="rating">
+                <span>{{ number }} 分</span>
+              </label>
+            </div>
+            <button class="save-button" type="submit" :disabled="!rating">
+              {{ saving ? '正在保存…' : '保存评分' }}
+            </button>
+          </fieldset>
+          <p v-if="ratingError" class="error" role="alert">{{ ratingError }}</p>
+          <p v-if="ratingMessage" class="success" role="status">{{ ratingMessage }}</p>
+        </form>
+        <p v-else class="detail-note">选择一个演示身份后即可评分。</p>
+      </template>
+    </dialog>
+  </div>
+</body>
+</html>

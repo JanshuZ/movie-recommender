@@ -1,0 +1,25 @@
+server:
+  address: 127.0.0.1
+  port: ${SERVER_PORT:8080}
+
+spring:
+  mvc:
+    problemdetails:
+      enabled: true
+  jackson:
+    mapper:
+      allow-coercion-of-scalars: false
+    deserialization:
+      accept-float-as-int: false
+  datasource:
+    url: jdbc:h2:mem:movie_recommender;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  sql:
+    init:
+      encoding: UTF-8
+      mode: embedded
+
+movie:
+  recommendation:
+    max-neighbors: ${MOVIE_RECOMMENDATION_MAX_NEIGHBORS:20}

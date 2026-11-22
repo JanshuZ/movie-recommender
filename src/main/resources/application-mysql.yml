@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${MOVIE_DB_URL}
+    username: ${MOVIE_DB_USER}
+    password: ${MOVIE_DB_PASSWORD}
+  sql:
+    init:
+      mode: never
