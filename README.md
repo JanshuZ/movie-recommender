@@ -4,6 +4,8 @@
 
 2023 年Maynooth University CS183FZ Critical Skills课程项目 *Movie Recommendation System — Based on Collaborative Filtering Algorithm*。
 
+[课程最终报告（PDF）](docs/course-project-report.pdf)
+
 ## 1. 项目定位与pipeline
 
 电影目录通常用搜索和统一排行榜帮助用户找片。这个项目利用用户已有的评分生成个性化排序，并在有效邻居较少时用热门电影补齐片单。系统用同一套接口连接浏览、评分和推荐更新，便于演示一次评分如何改变用户可见的结果。
