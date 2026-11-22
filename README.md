@@ -110,7 +110,7 @@ java -jar target/movie-recommender-1.0.0.jar
 - **交互演示**（`static/`）。负责把电影检索、详情、评分与刷新推荐串成一条可操作的流程，并在推荐卡片上展示结果依据。
 - **构建与验证**（`pom.xml`、`src/test/`）。负责 Maven 构建、H2 演示数据与 MySQL 接入，验证从提交评分到推荐结果更新的主流程。
 
-课程报告由 Jianshu Zheng、Zhihan Lin、Jinqiu Zhang、Mingtao Chen 和 Zhuofan Luo 共同完成。
+课程报告由 Jianshu Zheng、Zhihan Lin、Jinqiu Zhang、Mingtao Chen 和 Zhuofan Luo 共同完成。成绩：全组4.0。
 均为2022级福州大学梅努斯国际工程学院软件工程专业学生，与爱尔兰国立大学梅努斯学院计算机科学系联合培养。现简介：
 Jianshu Zheng 深圳大学人工智能学院研究生，计算机视觉研究所；
 Zhihan Lin 澳门大学研究生；
